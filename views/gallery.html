@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galería - Alba &amp; Bruno</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      background: #faf8f5;
+      color: #3a3330;
+      padding: 1.5rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: #5c4a42;
+    }
+    nav a {
+      font-size: 0.85rem;
+      color: #8a7a70;
+      text-decoration: none;
+      margin-left: 1rem;
+    }
+    nav a:hover { text-decoration: underline; }
+    .group-heading {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: #5c4a42;
+      margin: 1.5rem 0 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #e0d8d0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+    }
+    .card .meta {
+      padding: 0.5rem 0.6rem;
+      font-size: 0.75rem;
+      color: #8a7a70;
+    }
+    .empty {
+      text-align: center;
+      color: #8a7a70;
+      margin-top: 3rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Galería</h1>
+      <nav>
+        <a href="/upload">Subir</a>
+        <a href="/logout">Cerrar sesión</a>
+      </nav>
+    </header>
+    <div id="content"></div>
+  </div>
+
+  <script>
+    fetch('/api/uploads')
+      .then(r => r.json())
+      .then(uploads => {
+        const content = document.getElementById('content');
+        if (!uploads.length) {
+          content.innerHTML = '<p class="empty">Aún no hay fotos. ¡Sé el primero en compartir!</p>';
+          return;
+        }
+
+        // Group by uploader
+        const groups = {};
+        for (const u of uploads) {
+          if (!groups[u.uploader_name]) groups[u.uploader_name] = [];
+          groups[u.uploader_name].push(u);
+        }
+
+        for (const [name, photos] of Object.entries(groups)) {
+          const heading = document.createElement('h2');
+          heading.className = 'group-heading';
+          heading.textContent = name;
+          content.appendChild(heading);
+
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+          for (const p of photos) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const d = new Date(p.created_at + 'Z');
+            card.innerHTML = `
+              <img src="${escAttr(p.url)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+              <div class="meta">${escHtml(p.original_filename)}<br>${d.toLocaleString()}</div>
+            `;
+            grid.appendChild(card);
+          }
+          content.appendChild(grid);
+        }
+      });
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function escAttr(s) {
+      return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

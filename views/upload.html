@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subir Fotos - Alba &amp; Bruno</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      min-height: 100dvh;
+      background: #faf8f5;
+      color: #3a3330;
+      padding: 1.5rem;
+    }
+    .container { max-width: 500px; margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .user-info img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+    }
+    .user-info span { font-size: 0.95rem; }
+    nav a {
+      font-size: 0.85rem;
+      color: #8a7a70;
+      text-decoration: none;
+      margin-left: 1rem;
+    }
+    nav a:hover { text-decoration: underline; }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: #5c4a42;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .upload-area {
+      border: 2px dashed #c4b5a8;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 1rem;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      background: #f0ebe4;
+    }
+    .upload-area p { color: #8a7a70; font-size: 0.95rem; }
+    .upload-area .hint { font-size: 0.8rem; margin-top: 0.4rem; color: #a89a90; }
+    #file-input { display: none; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 8px;
+      background: #5c4a42;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #473832; }
+    .btn:disabled { background: #b8aba4; cursor: default; }
+    #file-list {
+      list-style: none;
+      margin: 1rem 0;
+    }
+    #file-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e8e0d8;
+      font-size: 0.85rem;
+    }
+    .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 0.5rem;
+    }
+    .progress-bar {
+      width: 80px;
+      height: 6px;
+      background: #e8e0d8;
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: #5c4a42;
+      border-radius: 3px;
+      transition: width 0.2s;
+    }
+    .status { margin-left: 0.5rem; font-size: 0.8rem; flex-shrink: 0; width: 20px; text-align: center; }
+    #message {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      color: #5c4a42;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="user-info">
+        <img id="avatar" src="" alt="">
+        <span id="username"></span>
+      </div>
+      <nav>
+        <a href="/gallery">Galería</a>
+        <a href="/logout">Cerrar sesión</a>
+      </nav>
+    </header>
+
+    <h1>Comparte tus fotos</h1>
+
+    <div class="upload-area" id="drop-zone">
+      <p>Toca para seleccionar fotos o arrástralas aquí</p>
+      <p class="hint">Imágenes de hasta 20 MB cada una</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" multiple>
+
+    <ul id="file-list"></ul>
+
+    <button class="btn" id="upload-btn" disabled>Subir</button>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const MAX_SIZE = 20 * 1024 * 1024;
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const uploadBtn = document.getElementById('upload-btn');
+    const message = document.getElementById('message');
+    let selectedFiles = [];
+
+    // Load user info
+    fetch('/api/me').then(r => r.json()).then(u => {
+      document.getElementById('username').textContent = u.name;
+      if (u.avatar) document.getElementById('avatar').src = u.avatar;
+    });
+
+    // File selection
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+    function handleFiles(files) {
+      selectedFiles = [];
+      fileList.innerHTML = '';
+      message.style.display = 'none';
+      for (const f of files) {
+        if (f.size > MAX_SIZE) {
+          addFileRow(f.name, 'demasiado grande');
+          continue;
+        }
+        selectedFiles.push(f);
+        addFileRow(f.name);
+      }
+      uploadBtn.disabled = selectedFiles.length === 0;
+    }
+
+    function addFileRow(name, error) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="file-name">${escHtml(name)}</span>
+        <div class="progress-bar"><div class="fill"></div></div>
+        <span class="status">${error ? '!' : ''}</span>
+      `;
+      if (error) li.style.color = '#c0392b';
+      fileList.appendChild(li);
+      return li;
+    }
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // Upload
+    uploadBtn.addEventListener('click', async () => {
+      uploadBtn.disabled = true;
+      const rows = fileList.querySelectorAll('li');
+      let completed = 0;
+      let failed = 0;
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const row = rows[i];
+        const fill = row.querySelector('.fill');
+        const status = row.querySelector('.status');
+
+        try {
+          const res = await fetch('/api/presign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+          });
+          const { uploadUrl } = await res.json();
+
+          await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', uploadUrl);
+            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.upload.onprogress = e => {
+              if (e.lengthComputable) fill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+            };
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject();
+            xhr.onerror = reject;
+            xhr.send(file);
+          });
+
+          fill.style.width = '100%';
+          fill.style.background = '#27ae60';
+          status.textContent = '\u2713';
+          completed++;
+        } catch {
+          fill.style.background = '#c0392b';
+          status.textContent = '!';
+          failed++;
+        }
+      }
+
+      message.style.display = 'block';
+      if (failed === 0) {
+        message.textContent = `${completed === 1 ? '1 foto subida' : completed + ' fotos subidas'}. ¡Gracias!`;
+      } else {
+        message.textContent = `${completed} subida${completed !== 1 ? 's' : ''}, ${failed} fallida${failed !== 1 ? 's' : ''}.`;
+      }
+    });
+  </script>
+</body>
+</html>
