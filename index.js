@@ -126,14 +126,17 @@ app.post("/api/presign", ensureAuth, async (req, res) => {
 // --- API: all uploads (for gallery) ---
 app.get("/api/uploads", ensureAuth, async (_req, res) => {
   const rows = getAllUploads.all();
+  const bucket = process.env.S3_BUCKET_NAME;
   const uploads = await Promise.all(
-    rows.map(async (r) => ({
-      ...r,
-      url: await getSignedUrl(s3, new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
-        Key: r.s3_key,
-      }), { expiresIn: 3600 }),
-    }))
+    rows.map(async (r) => {
+      const thumbKey = r.s3_key.replace(/^uploads\//, "thumbnail/");
+      const resizedKey = r.s3_key.replace(/^uploads\//, "resized/");
+      const [thumbnailUrl, resizedUrl] = await Promise.all([
+        getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 }),
+        getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: resizedKey }), { expiresIn: 3600 }),
+      ]);
+      return { ...r, thumbnailUrl, resizedUrl };
+    })
   );
   res.json(uploads);
 });

@@ -62,11 +62,27 @@
       font-size: 0.75rem;
       color: #8a7a70;
     }
+    .card { cursor: pointer; }
     .empty {
       text-align: center;
       color: #8a7a70;
       margin-top: 3rem;
       font-size: 1rem;
+    }
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -80,6 +96,9 @@
       </nav>
     </header>
     <div id="content"></div>
+  </div>
+  <div class="lightbox" id="lightbox">
+    <img id="lightbox-img" src="" alt="">
   </div>
 
   <script>
@@ -110,9 +129,10 @@
           for (const p of photos) {
             const card = document.createElement('div');
             card.className = 'card';
+            card.addEventListener('click', () => openLightbox(p.resizedUrl));
             const d = new Date(p.created_at + 'Z');
             card.innerHTML = `
-              <img src="${escAttr(p.url)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+              <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
               <div class="meta">${escHtml(p.original_filename)}<br>${d.toLocaleString()}</div>
             `;
             grid.appendChild(card);
@@ -120,6 +140,17 @@
           content.appendChild(grid);
         }
       });
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    function openLightbox(url) {
+      lightboxImg.src = url;
+      lightbox.classList.add('open');
+    }
+    lightbox.addEventListener('click', () => {
+      lightbox.classList.remove('open');
+      lightboxImg.src = '';
+    });
 
     function escHtml(s) {
       const d = document.createElement('div');
