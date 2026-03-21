@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Alba &amp; Bruno</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      background: #faf8f5;
+      color: #3a3330;
+      padding: 1.5rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: #5c4a42;
+    }
+    nav a {
+      font-size: 0.85rem;
+      color: #8a7a70;
+      text-decoration: none;
+      margin-left: 1rem;
+    }
+    nav a:hover { text-decoration: underline; }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .tabs button {
+      padding: 0.5rem 1.2rem;
+      border: 1px solid #d4ccc4;
+      background: #fff;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: #5c4a42;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      background: #5c4a42;
+      color: #fff;
+      border-color: #5c4a42;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Photos grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: relative;
+    }
+    .card.deleted { opacity: 0.45; }
+    .card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+    }
+    .card .meta {
+      padding: 0.5rem 0.6rem;
+      font-size: 0.72rem;
+      color: #8a7a70;
+    }
+    .card .actions {
+      padding: 0 0.6rem 0.5rem;
+    }
+    .btn {
+      padding: 0.3rem 0.7rem;
+      border: 1px solid #d4ccc4;
+      background: #fff;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      color: #5c4a42;
+      cursor: pointer;
+    }
+    .btn:hover { background: #f0ece8; }
+    .btn-danger { border-color: #c0392b; color: #c0392b; }
+    .btn-danger:hover { background: #fdecea; }
+
+    /* Users table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    th, td {
+      text-align: left;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+    }
+    th {
+      background: #f5f0eb;
+      color: #5c4a42;
+      font-weight: 600;
+    }
+    tr:not(:last-child) td { border-bottom: 1px solid #ece6df; }
+    td img.avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Admin</h1>
+      <nav>
+        <a href="/gallery">Galería</a>
+        <a href="/upload">Subir</a>
+        <a href="/logout">Cerrar sesión</a>
+      </nav>
+    </header>
+
+    <div class="tabs">
+      <button class="active" data-tab="photos">Fotos</button>
+      <button data-tab="users">Usuarios</button>
+    </div>
+
+    <div id="photos" class="panel active"></div>
+    <div id="users" class="panel"></div>
+  </div>
+
+  <script>
+    // Tabs
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function escAttr(s) {
+      return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // --- Photos ---
+    function loadPhotos() {
+      fetch('/api/admin/uploads')
+        .then(r => r.json())
+        .then(uploads => {
+          const panel = document.getElementById('photos');
+          if (!uploads.length) {
+            panel.innerHTML = '<p style="color:#8a7a70">No hay fotos.</p>';
+            return;
+          }
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+          for (const p of uploads) {
+            const card = document.createElement('div');
+            card.className = 'card' + (p.deleted ? ' deleted' : '');
+            const d = new Date(p.created_at + 'Z');
+            card.innerHTML = `
+              <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+              <div class="meta">
+                ${escHtml(p.original_filename)}<br>
+                ${escHtml(p.uploader_name)} &middot; ${d.toLocaleString()}
+              </div>
+              <div class="actions">
+                ${p.deleted
+                  ? `<button class="btn" onclick="restorePhoto(${p.id})">Restaurar</button>`
+                  : `<button class="btn btn-danger" onclick="deletePhoto(${p.id})">Eliminar</button>`
+                }
+              </div>
+            `;
+            grid.appendChild(card);
+          }
+          panel.innerHTML = '';
+          panel.appendChild(grid);
+        });
+    }
+
+    function deletePhoto(id) {
+      fetch(`/api/admin/uploads/${id}/delete`, { method: 'POST' })
+        .then(() => loadPhotos());
+    }
+
+    function restorePhoto(id) {
+      fetch(`/api/admin/uploads/${id}/restore`, { method: 'POST' })
+        .then(() => loadPhotos());
+    }
+
+    // --- Users ---
+    function loadUsers() {
+      fetch('/api/admin/users')
+        .then(r => r.json())
+        .then(users => {
+          const panel = document.getElementById('users');
+          let html = `<table>
+            <thead><tr><th>ID</th><th>Usuario</th><th>Email</th><th>Admin</th><th></th></tr></thead>
+            <tbody>`;
+          for (const u of users) {
+            const avatarImg = u.avatar ? `<img class="avatar" src="${escAttr(u.avatar)}">` : '';
+            html += `<tr>
+              <td>${u.id}</td>
+              <td>${avatarImg}${escHtml(u.name || '')}</td>
+              <td>${escHtml(u.email || '')}</td>
+              <td>${u.is_admin ? 'Sí' : 'No'}</td>
+              <td>${u.id === 1 ? '' : `<button class="btn" onclick="toggleAdmin(${u.id})">${u.is_admin ? 'Quitar admin' : 'Hacer admin'}</button>`}</td>
+            </tr>`;
+          }
+          html += '</tbody></table>';
+          panel.innerHTML = html;
+        });
+    }
+
+    function toggleAdmin(id) {
+      fetch(`/api/admin/users/${id}/toggle-admin`, { method: 'POST' })
+        .then(() => loadUsers());
+    }
+
+    loadPhotos();
+    loadUsers();
+  </script>
+</body>
+</html>

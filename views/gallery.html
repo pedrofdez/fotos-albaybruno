@@ -10,14 +10,14 @@
       font-family: 'Georgia', serif;
       background: #faf8f5;
       color: #3a3330;
-      padding: 1.5rem;
+      padding: 0;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 1.5rem 1.5rem; }
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 2rem;
+      padding: 1.5rem 0 1rem;
     }
     h1 {
       font-size: 1.6rem;
@@ -32,6 +32,124 @@
       margin-left: 1rem;
     }
     nav a:hover { text-decoration: underline; }
+
+    /* Filter bar */
+    .filter-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #faf8f5;
+      border-bottom: 1px solid #e0d8d0;
+      padding: 0.6rem 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.4rem 0.9rem;
+      border: 1px solid #d4ccc4;
+      background: #fff;
+      border-radius: 20px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: #5c4a42;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .filter-btn:hover { background: #f0ece8; }
+    .filter-btn.active {
+      background: #5c4a42;
+      color: #fff;
+      border-color: #5c4a42;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 140px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid #d4ccc4;
+      border-radius: 20px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: #3a3330;
+      background: #fff;
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: #5c4a42; }
+    .search-wrap input::placeholder { color: #b5a89e; }
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #d4ccc4;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 60;
+    }
+    .dropdown.open { display: block; }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #3a3330;
+    }
+    .dropdown-item:hover { background: #f5f0eb; }
+    .dropdown-item .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .dropdown-item .avatar-initial {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #d4ccc4;
+      color: #5c4a42;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .active-filter-label {
+      font-size: 0.8rem;
+      color: #5c4a42;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid #5c4a42;
+      background: #5c4a42;
+      color: #fff;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+    .active-filter-label .clear {
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      opacity: 0.8;
+    }
+    .active-filter-label .clear:hover { opacity: 1; }
+
+    /* Grid */
     .group-heading {
       font-size: 1.1rem;
       font-weight: 400;
@@ -50,6 +168,7 @@
       overflow: hidden;
       background: #fff;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      cursor: pointer;
     }
     .card img {
       width: 100%;
@@ -62,13 +181,14 @@
       font-size: 0.75rem;
       color: #8a7a70;
     }
-    .card { cursor: pointer; }
     .empty {
       text-align: center;
       color: #8a7a70;
       margin-top: 3rem;
       font-size: 1rem;
     }
+
+    /* Lightbox */
     .lightbox {
       display: none;
       position: fixed;
@@ -95,52 +215,194 @@
         <a href="/logout">Cerrar sesión</a>
       </nav>
     </header>
+
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" id="btn-mine">Mis fotos</button>
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Buscar persona...">
+        <div class="dropdown" id="dropdown"></div>
+      </div>
+      <button class="filter-btn" id="btn-all">Todos</button>
+    </div>
+
     <div id="content"></div>
   </div>
+
   <div class="lightbox" id="lightbox">
     <img id="lightbox-img" src="" alt="">
   </div>
 
   <script>
-    fetch('/api/uploads')
-      .then(r => r.json())
-      .then(uploads => {
-        const content = document.getElementById('content');
-        if (!uploads.length) {
-          content.innerHTML = '<p class="empty">Aún no hay fotos. ¡Sé el primero en compartir!</p>';
-          return;
+    let currentUserId = new URLSearchParams(window.location.search).get('userId');
+    let myUserId = null;
+    let uploaders = [];
+
+    const btnAll = document.getElementById('btn-all');
+    const btnMine = document.getElementById('btn-mine');
+    const searchInput = document.getElementById('search-input');
+    const dropdown = document.getElementById('dropdown');
+    const filterBar = document.getElementById('filter-bar');
+
+    // Active filter label (shown when filtering by a searched user)
+    let activeLabel = null;
+
+    async function init() {
+      const me = await fetch('/api/me').then(r => r.json());
+      myUserId = me.id;
+      uploaders = await fetch('/api/uploaders').then(r => r.json());
+
+      if (!currentUserId) {
+        currentUserId = String(me.id);
+        updateUrl();
+      }
+
+      updateButtons();
+      loadPhotos();
+    }
+
+    function updateUrl() {
+      const url = new URL(window.location);
+      if (currentUserId) {
+        url.searchParams.set('userId', currentUserId);
+      } else {
+        url.searchParams.delete('userId');
+      }
+      history.replaceState(null, '', url);
+    }
+
+    function updateButtons() {
+      btnAll.classList.toggle('active', !currentUserId);
+      btnMine.classList.toggle('active', currentUserId == myUserId);
+
+      // Remove old active label if any
+      if (activeLabel) { activeLabel.remove(); activeLabel = null; }
+
+      // If filtering by someone other than "all" or "mine", show a label
+      if (currentUserId && currentUserId != myUserId) {
+        const user = uploaders.find(u => u.id == currentUserId);
+        if (user) {
+          activeLabel = document.createElement('span');
+          activeLabel.className = 'active-filter-label';
+          activeLabel.innerHTML = `${escHtml(user.name)} <span class="clear">&times;</span>`;
+          activeLabel.querySelector('.clear').addEventListener('click', () => selectFilter(null));
+          filterBar.insertBefore(activeLabel, searchInput.parentElement);
         }
+      }
 
-        // Group by uploader
-        const groups = {};
-        for (const u of uploads) {
-          if (!groups[u.uploader_name]) groups[u.uploader_name] = [];
-          groups[u.uploader_name].push(u);
-        }
+      searchInput.value = '';
+    }
 
-        for (const [name, photos] of Object.entries(groups)) {
-          const heading = document.createElement('h2');
-          heading.className = 'group-heading';
-          heading.textContent = name;
-          content.appendChild(heading);
+    function selectFilter(userId) {
+      currentUserId = userId ? String(userId) : null;
+      updateUrl();
+      updateButtons();
+      dropdown.classList.remove('open');
+      loadPhotos();
+    }
 
-          const grid = document.createElement('div');
-          grid.className = 'grid';
-          for (const p of photos) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.addEventListener('click', () => openLightbox(p.resizedUrl));
-            const d = new Date(p.created_at + 'Z');
-            card.innerHTML = `
-              <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
-              <div class="meta">${escHtml(p.original_filename)}<br>${d.toLocaleString()}</div>
-            `;
-            grid.appendChild(card);
+    // --- Quick buttons ---
+    btnAll.addEventListener('click', () => selectFilter(null));
+    btnMine.addEventListener('click', () => selectFilter(myUserId));
+
+    // --- Search ---
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) { dropdown.classList.remove('open'); return; }
+
+      const matches = uploaders.filter(u =>
+        u.name && u.name.toLowerCase().includes(q)
+      ).slice(0, 10);
+
+      if (!matches.length) {
+        dropdown.innerHTML = '<div class="dropdown-item" style="color:#8a7a70">Sin resultados</div>';
+      } else {
+        dropdown.innerHTML = '';
+        for (const u of matches) {
+          const item = document.createElement('div');
+          item.className = 'dropdown-item';
+          const initial = (u.name || '?').charAt(0).toUpperCase();
+          if (u.avatar) {
+            const img = document.createElement('img');
+            img.className = 'avatar';
+            img.src = u.avatar;
+            img.alt = '';
+            img.onerror = function() {
+              const span = document.createElement('span');
+              span.className = 'avatar-initial';
+              span.textContent = initial;
+              this.replaceWith(span);
+            };
+            item.appendChild(img);
+          } else {
+            const span = document.createElement('span');
+            span.className = 'avatar-initial';
+            span.textContent = initial;
+            item.appendChild(span);
           }
-          content.appendChild(grid);
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = u.name;
+          item.appendChild(nameSpan);
+          item.addEventListener('click', () => selectFilter(u.id));
+          dropdown.appendChild(item);
         }
-      });
+      }
+      dropdown.classList.add('open');
+    });
 
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim()) dropdown.classList.add('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-wrap')) dropdown.classList.remove('open');
+    });
+
+    // --- Photos ---
+    function loadPhotos() {
+      const url = currentUserId ? `/api/uploads?userId=${currentUserId}` : '/api/uploads';
+      fetch(url)
+        .then(r => r.json())
+        .then(uploads => {
+          const content = document.getElementById('content');
+          content.innerHTML = '';
+
+          if (!uploads.length) {
+            content.innerHTML = '<p class="empty">Aún no hay fotos. ¡Sé el primero en compartir!</p>';
+            return;
+          }
+
+          // Group by uploader
+          const groups = {};
+          for (const u of uploads) {
+            if (!groups[u.uploader_name]) groups[u.uploader_name] = [];
+            groups[u.uploader_name].push(u);
+          }
+
+          for (const [name, photos] of Object.entries(groups)) {
+            const heading = document.createElement('h2');
+            heading.className = 'group-heading';
+            heading.textContent = name;
+            content.appendChild(heading);
+
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+            for (const p of photos) {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.addEventListener('click', () => openLightbox(p.resizedUrl));
+              const d = new Date(p.created_at + 'Z');
+              card.innerHTML = `
+                <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+                <div class="meta">${escHtml(p.original_filename)}<br>${d.toLocaleString()}</div>
+              `;
+              grid.appendChild(card);
+            }
+            content.appendChild(grid);
+          }
+        });
+    }
+
+    // --- Lightbox ---
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     function openLightbox(url) {
@@ -152,6 +414,7 @@
       lightboxImg.src = '';
     });
 
+    // --- Helpers ---
     function escHtml(s) {
       const d = document.createElement('div');
       d.textContent = s;
@@ -160,6 +423,9 @@
     function escAttr(s) {
       return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
+
+    // --- Init ---
+    init();
   </script>
 </body>
 </html>

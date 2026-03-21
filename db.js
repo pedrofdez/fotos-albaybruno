@@ -12,6 +12,7 @@ db.exec(`
     name TEXT,
     email TEXT,
     avatar TEXT,
+    is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
 
@@ -21,9 +22,17 @@ db.exec(`
     s3_key TEXT NOT NULL,
     original_filename TEXT,
     size_bytes INTEGER,
+    deleted INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
 `);
+
+// Ensure columns exist for existing databases
+try { db.exec("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+try { db.exec("ALTER TABLE uploads ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0"); } catch (_) {}
+
+// User 1 is always admin
+db.prepare("UPDATE users SET is_admin = 1 WHERE id = 1").run();
 
 const upsertUser = db.prepare(`
   INSERT INTO users (google_id, name, email, avatar)
@@ -46,7 +55,35 @@ const getAllUploads = db.prepare(`
   SELECT uploads.*, users.name AS uploader_name, users.avatar AS uploader_avatar
   FROM uploads
   JOIN users ON uploads.user_id = users.id
+  WHERE uploads.deleted = 0
   ORDER BY uploads.created_at DESC
 `);
 
-module.exports = { db, upsertUser, getUserById, insertUpload, getAllUploads };
+const getUploadsByUser = db.prepare(`
+  SELECT uploads.*, users.name AS uploader_name, users.avatar AS uploader_avatar
+  FROM uploads
+  JOIN users ON uploads.user_id = users.id
+  WHERE uploads.deleted = 0 AND uploads.user_id = ?
+  ORDER BY uploads.created_at DESC
+`);
+
+const getUploaders = db.prepare(`
+  SELECT users.id, users.name, users.avatar
+  FROM users
+  JOIN uploads ON uploads.user_id = users.id AND uploads.deleted = 0
+  GROUP BY users.id
+`);
+
+const getAllUploadsAdmin = db.prepare(`
+  SELECT uploads.*, users.name AS uploader_name, users.avatar AS uploader_avatar
+  FROM uploads
+  JOIN users ON uploads.user_id = users.id
+  ORDER BY uploads.created_at DESC
+`);
+
+const softDeleteUpload = db.prepare("UPDATE uploads SET deleted = 1 WHERE id = ?");
+const restoreUpload = db.prepare("UPDATE uploads SET deleted = 0 WHERE id = ?");
+const getAllUsers = db.prepare("SELECT id, name, email, avatar, is_admin, created_at FROM users ORDER BY id");
+const setUserAdmin = db.prepare("UPDATE users SET is_admin = ? WHERE id = ?");
+
+module.exports = { db, upsertUser, getUserById, insertUpload, getAllUploads, getUploadsByUser, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin };

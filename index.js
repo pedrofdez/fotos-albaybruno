@@ -7,7 +7,7 @@ const morgan = require("morgan");
 const path = require("path");
 const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { upsertUser, getUserById, insertUpload, getAllUploads } = require("./db");
+const { upsertUser, getUserById, insertUpload, getAllUploads, getUploadsByUser, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin } = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -67,6 +67,11 @@ function ensureAuth(req, res, next) {
   res.redirect("/");
 }
 
+function ensureAdmin(req, res, next) {
+  if (req.isAuthenticated() && req.user.is_admin) return next();
+  res.status(403).json({ error: "forbidden" });
+}
+
 // --- Auth routes ---
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
@@ -91,7 +96,7 @@ app.get("/gallery", ensureAuth, (_req, res) => {
 
 // --- API: current user ---
 app.get("/api/me", ensureAuth, (req, res) => {
-  res.json({ name: req.user.name, avatar: req.user.avatar });
+  res.json({ id: req.user.id, name: req.user.name, avatar: req.user.avatar });
 });
 
 // --- API: presign ---
@@ -123,9 +128,15 @@ app.post("/api/presign", ensureAuth, async (req, res) => {
   res.json({ uploadUrl, s3Key });
 });
 
+// --- API: uploaders list ---
+app.get("/api/uploaders", ensureAuth, (_req, res) => {
+  res.json(getUploaders.all());
+});
+
 // --- API: all uploads (for gallery) ---
-app.get("/api/uploads", ensureAuth, async (_req, res) => {
-  const rows = getAllUploads.all();
+app.get("/api/uploads", ensureAuth, async (req, res) => {
+  const userId = req.query.userId;
+  const rows = userId ? getUploadsByUser.all(userId) : getAllUploads.all();
   const bucket = process.env.S3_BUCKET_NAME;
   const uploads = await Promise.all(
     rows.map(async (r) => {
@@ -139,6 +150,47 @@ app.get("/api/uploads", ensureAuth, async (_req, res) => {
     })
   );
   res.json(uploads);
+});
+
+// --- Admin ---
+app.get("/admin", ensureAdmin, (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "admin.html"));
+});
+
+app.get("/api/admin/uploads", ensureAdmin, async (_req, res) => {
+  const rows = getAllUploadsAdmin.all();
+  const bucket = process.env.S3_BUCKET_NAME;
+  const uploads = await Promise.all(
+    rows.map(async (r) => {
+      const thumbKey = r.s3_key.replace(/^uploads\//, "thumbnail/");
+      const thumbnailUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 });
+      return { ...r, thumbnailUrl };
+    })
+  );
+  res.json(uploads);
+});
+
+app.post("/api/admin/uploads/:id/delete", ensureAdmin, (req, res) => {
+  softDeleteUpload.run(req.params.id);
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/uploads/:id/restore", ensureAdmin, (req, res) => {
+  restoreUpload.run(req.params.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/users", ensureAdmin, (_req, res) => {
+  res.json(getAllUsers.all());
+});
+
+app.post("/api/admin/users/:id/toggle-admin", ensureAdmin, (req, res) => {
+  const targetId = parseInt(req.params.id);
+  if (targetId === 1) return res.status(400).json({ error: "cannot change user 1" });
+  const user = getUserById.get(targetId);
+  if (!user) return res.status(404).json({ error: "user not found" });
+  setUserAdmin.run(user.is_admin ? 0 : 1, targetId);
+  res.json({ ok: true, is_admin: user.is_admin ? 0 : 1 });
 });
 
 // --- Start ---
