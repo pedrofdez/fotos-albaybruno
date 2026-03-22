@@ -7,7 +7,7 @@ const morgan = require("morgan");
 const path = require("path");
 const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { upsertUser, getUserById, insertUpload, getAllUploads, getUploadsByUser, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin } = require("./db");
+const { upsertUser, getUserById, insertUpload, getAllUploadsPaginated, getUploadsByUserPaginated, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin } = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -134,9 +134,21 @@ app.get("/api/uploaders", ensureAuth, (_req, res) => {
 });
 
 // --- API: all uploads (for gallery) ---
+const PAGE_SIZE = 20;
+
 app.get("/api/uploads", ensureAuth, async (req, res) => {
   const userId = req.query.userId;
-  const rows = userId ? getUploadsByUser.all(userId) : getAllUploads.all();
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+  const limit = PAGE_SIZE + 1;
+
+  const rows = userId
+    ? getUploadsByUserPaginated.all(userId, limit, offset)
+    : getAllUploadsPaginated.all(limit, offset);
+
+  const hasMore = rows.length > PAGE_SIZE;
+  if (hasMore) rows.pop();
+
   const bucket = process.env.S3_BUCKET_NAME;
   const uploads = await Promise.all(
     rows.map(async (r) => {
@@ -149,7 +161,7 @@ app.get("/api/uploads", ensureAuth, async (req, res) => {
       return { ...r, thumbnailUrl, resizedUrl };
     })
   );
-  res.json(uploads);
+  res.json({ uploads, hasMore });
 });
 
 // --- Admin ---

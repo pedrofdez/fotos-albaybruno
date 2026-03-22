@@ -150,14 +150,6 @@
     .active-filter-label .clear:hover { opacity: 1; }
 
     /* Grid */
-    .group-heading {
-      font-size: 1.1rem;
-      font-weight: 400;
-      color: #5c4a42;
-      margin: 1.5rem 0 0.75rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 1px solid #e0d8d0;
-    }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -181,6 +173,27 @@
       font-size: 0.75rem;
       color: #8a7a70;
     }
+    .card .meta strong {
+      color: #5c4a42;
+      font-size: 0.78rem;
+    }
+    .load-more-wrap {
+      text-align: center;
+      padding: 2rem 0;
+    }
+    .load-more-btn {
+      padding: 0.7rem 2rem;
+      border: 1px solid #d4ccc4;
+      background: #fff;
+      border-radius: 24px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: #5c4a42;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .load-more-btn:hover { background: #f0ece8; }
+    .load-more-btn:disabled { opacity: 0.5; cursor: default; }
     .empty {
       text-align: center;
       color: #8a7a70;
@@ -236,6 +249,9 @@
     let currentUserId = new URLSearchParams(window.location.search).get('userId');
     let myUserId = null;
     let uploaders = [];
+    let currentPage = 1;
+    let hasMore = false;
+    let isLoading = false;
 
     const btnAll = document.getElementById('btn-all');
     const btnMine = document.getElementById('btn-mine');
@@ -257,7 +273,7 @@
       }
 
       updateButtons();
-      loadPhotos();
+      loadPhotos(false);
     }
 
     function updateUrl() {
@@ -297,7 +313,7 @@
       updateUrl();
       updateButtons();
       dropdown.classList.remove('open');
-      loadPhotos();
+      loadPhotos(false);
     }
 
     // --- Quick buttons ---
@@ -358,48 +374,69 @@
     });
 
     // --- Photos ---
-    function loadPhotos() {
-      const url = currentUserId ? `/api/uploads?userId=${currentUserId}` : '/api/uploads';
-      fetch(url)
-        .then(r => r.json())
-        .then(uploads => {
-          const content = document.getElementById('content');
-          content.innerHTML = '';
+    function loadPhotos(append = false) {
+      if (isLoading) return;
+      isLoading = true;
 
-          if (!uploads.length) {
+      if (!append) {
+        currentPage = 1;
+        document.getElementById('content').innerHTML = '';
+      }
+
+      const params = new URLSearchParams();
+      if (currentUserId) params.set('userId', currentUserId);
+      params.set('page', currentPage);
+
+      fetch(`/api/uploads?${params}`)
+        .then(r => r.json())
+        .then(data => {
+          const content = document.getElementById('content');
+
+          if (currentPage === 1 && !data.uploads.length) {
             content.innerHTML = '<p class="empty">Aún no hay fotos. ¡Sé el primero en compartir!</p>';
+            isLoading = false;
             return;
           }
 
-          // Group by uploader
-          const groups = {};
-          for (const u of uploads) {
-            if (!groups[u.uploader_name]) groups[u.uploader_name] = [];
-            groups[u.uploader_name].push(u);
-          }
-
-          for (const [name, photos] of Object.entries(groups)) {
-            const heading = document.createElement('h2');
-            heading.className = 'group-heading';
-            heading.textContent = name;
-            content.appendChild(heading);
-
-            const grid = document.createElement('div');
+          // Get or create grid
+          let grid = content.querySelector('.grid');
+          if (!grid) {
+            grid = document.createElement('div');
             grid.className = 'grid';
-            for (const p of photos) {
-              const card = document.createElement('div');
-              card.className = 'card';
-              card.addEventListener('click', () => openLightbox(p.resizedUrl));
-              const d = new Date(p.created_at + 'Z');
-              card.innerHTML = `
-                <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
-                <div class="meta">${escHtml(p.original_filename)}<br>${d.toLocaleString()}</div>
-              `;
-              grid.appendChild(card);
-            }
             content.appendChild(grid);
           }
-        });
+
+          for (const p of data.uploads) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.addEventListener('click', () => openLightbox(p.resizedUrl));
+            const d = new Date(p.created_at + 'Z');
+            card.innerHTML = `
+              <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+              <div class="meta"><strong>${escHtml(p.uploader_name)}</strong><br>${escHtml(p.original_filename)} &middot; ${d.toLocaleString()}</div>
+            `;
+            grid.appendChild(card);
+          }
+
+          // Remove old load-more button
+          const oldBtn = content.querySelector('.load-more-wrap');
+          if (oldBtn) oldBtn.remove();
+
+          hasMore = data.hasMore;
+          if (hasMore) {
+            const wrap = document.createElement('div');
+            wrap.className = 'load-more-wrap';
+            wrap.innerHTML = '<button class="load-more-btn">Cargar más fotos</button>';
+            wrap.querySelector('button').addEventListener('click', () => {
+              currentPage++;
+              loadPhotos(true);
+            });
+            content.appendChild(wrap);
+          }
+
+          isLoading = false;
+        })
+        .catch(() => { isLoading = false; });
     }
 
     // --- Lightbox ---
