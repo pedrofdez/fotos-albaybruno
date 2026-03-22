@@ -99,9 +99,17 @@ const getAllUploadsAdmin = db.prepare(`
   ORDER BY uploads.created_at DESC
 `);
 
+const getAllUploadsAdminPaginated = db.prepare(`
+  SELECT uploads.*, users.name AS uploader_name, users.avatar AS uploader_avatar
+  FROM uploads
+  JOIN users ON uploads.user_id = users.id
+  ORDER BY uploads.created_at DESC
+  LIMIT ? OFFSET ?
+`);
+
 const softDeleteUpload = db.prepare("UPDATE uploads SET deleted = 1 WHERE id = ?");
 const restoreUpload = db.prepare("UPDATE uploads SET deleted = 0 WHERE id = ?");
 const getAllUsers = db.prepare("SELECT id, name, email, avatar, is_admin, created_at FROM users ORDER BY id");
 const setUserAdmin = db.prepare("UPDATE users SET is_admin = ? WHERE id = ?");
 
-module.exports = { db, upsertUser, getUserById, insertUpload, getAllUploads, getUploadsByUser, getAllUploadsPaginated, getUploadsByUserPaginated, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin };
+module.exports = { db, upsertUser, getUserById, insertUpload, getAllUploads, getUploadsByUser, getAllUploadsPaginated, getUploadsByUserPaginated, getUploaders, getAllUploadsAdmin, getAllUploadsAdminPaginated, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin };

@@ -321,9 +321,15 @@
     btnMine.addEventListener('click', () => selectFilter(myUserId));
 
     // --- Search ---
+    let searchTimer = null;
     searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
       const q = searchInput.value.trim().toLowerCase();
       if (!q) { dropdown.classList.remove('open'); return; }
+      searchTimer = setTimeout(() => filterUploaders(q), 200);
+    });
+
+    function filterUploaders(q) {
 
       const matches = uploaders.filter(u =>
         u.name && u.name.toLowerCase().includes(q)
@@ -363,10 +369,12 @@
         }
       }
       dropdown.classList.add('open');
-    });
+    }
 
     searchInput.addEventListener('focus', () => {
-      if (searchInput.value.trim()) dropdown.classList.add('open');
+      if (searchInput.value.trim()) {
+        filterUploaders(searchInput.value.trim().toLowerCase());
+      }
     });
 
     document.addEventListener('click', (e) => {

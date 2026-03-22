@@ -96,6 +96,21 @@
     .btn:hover { background: #f0ece8; }
     .btn-danger { border-color: #c0392b; color: #c0392b; }
     .btn-danger:hover { background: #fdecea; }
+    .load-more-wrap {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+    .load-more-btn {
+      padding: 0.5rem 1.5rem;
+      border: 1px solid #d4ccc4;
+      background: #fff;
+      border-radius: 20px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: #5c4a42;
+      cursor: pointer;
+    }
+    .load-more-btn:hover { background: #f0ece8; }
 
     /* Users table */
     table {
@@ -167,23 +182,45 @@
     }
 
     // --- Photos ---
-    function loadPhotos() {
-      fetch('/api/admin/uploads')
+    let photoPage = 1;
+    let photoHasMore = false;
+    let photoLoading = false;
+
+    function loadPhotos(append = false) {
+      if (photoLoading) return;
+      photoLoading = true;
+
+      if (!append) {
+        photoPage = 1;
+        document.getElementById('photos').innerHTML = '';
+      }
+
+      fetch(`/api/admin/uploads?page=${photoPage}`)
         .then(r => r.json())
-        .then(uploads => {
+        .then(data => {
           const panel = document.getElementById('photos');
-          if (!uploads.length) {
+
+          if (photoPage === 1 && !data.uploads.length) {
             panel.innerHTML = '<p style="color:#8a7a70">No hay fotos.</p>';
+            photoLoading = false;
             return;
           }
-          const grid = document.createElement('div');
-          grid.className = 'grid';
-          for (const p of uploads) {
+
+          let grid = panel.querySelector('.grid');
+          if (!grid) {
+            grid = document.createElement('div');
+            grid.className = 'grid';
+            panel.appendChild(grid);
+          }
+
+          for (const p of data.uploads) {
             const card = document.createElement('div');
             card.className = 'card' + (p.deleted ? ' deleted' : '');
+            card.dataset.id = p.id;
             const d = new Date(p.created_at + 'Z');
+            const thumbSrc = p.thumbnailUrl ? escAttr(p.thumbnailUrl) : '';
             card.innerHTML = `
-              <img src="${escAttr(p.thumbnailUrl)}" alt="${escAttr(p.original_filename)}" loading="lazy">
+              <img src="${thumbSrc}" alt="${escAttr(p.original_filename)}" loading="lazy">
               <div class="meta">
                 ${escHtml(p.original_filename)}<br>
                 ${escHtml(p.uploader_name)} &middot; ${d.toLocaleString()}
@@ -197,19 +234,35 @@
             `;
             grid.appendChild(card);
           }
-          panel.innerHTML = '';
-          panel.appendChild(grid);
-        });
+
+          const oldBtn = panel.querySelector('.load-more-wrap');
+          if (oldBtn) oldBtn.remove();
+
+          photoHasMore = data.hasMore;
+          if (photoHasMore) {
+            const wrap = document.createElement('div');
+            wrap.className = 'load-more-wrap';
+            wrap.innerHTML = '<button class="load-more-btn">Cargar más</button>';
+            wrap.querySelector('button').addEventListener('click', () => {
+              photoPage++;
+              loadPhotos(true);
+            });
+            panel.appendChild(wrap);
+          }
+
+          photoLoading = false;
+        })
+        .catch(() => { photoLoading = false; });
     }
 
     function deletePhoto(id) {
       fetch(`/api/admin/uploads/${id}/delete`, { method: 'POST' })
-        .then(() => loadPhotos());
+        .then(() => loadPhotos(false));
     }
 
     function restorePhoto(id) {
       fetch(`/api/admin/uploads/${id}/restore`, { method: 'POST' })
-        .then(() => loadPhotos());
+        .then(() => loadPhotos(false));
     }
 
     // --- Users ---

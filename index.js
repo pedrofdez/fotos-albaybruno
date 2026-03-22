@@ -7,7 +7,8 @@ const morgan = require("morgan");
 const path = require("path");
 const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { upsertUser, getUserById, insertUpload, getAllUploadsPaginated, getUploadsByUserPaginated, getUploaders, getAllUploadsAdmin, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin } = require("./db");
+const { db, upsertUser, getUserById, insertUpload, getAllUploadsPaginated, getUploadsByUserPaginated, getUploaders, getAllUploadsAdminPaginated, softDeleteUpload, restoreUpload, getAllUsers, setUserAdmin } = require("./db");
+const SqliteStore = require("better-sqlite3-session-store")(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
   session({
+    store: new SqliteStore({ client: db, expired: { clear: true, intervalMs: 900000 } }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -154,10 +156,13 @@ app.get("/api/uploads", ensureAuth, async (req, res) => {
     rows.map(async (r) => {
       const thumbKey = r.s3_key.replace(/^uploads\//, "thumbnail/");
       const resizedKey = r.s3_key.replace(/^uploads\//, "resized/");
-      const [thumbnailUrl, resizedUrl] = await Promise.all([
-        getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 }),
-        getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: resizedKey }), { expiresIn: 3600 }),
-      ]);
+      let thumbnailUrl = null, resizedUrl = null;
+      try {
+        [thumbnailUrl, resizedUrl] = await Promise.all([
+          getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 }),
+          getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: resizedKey }), { expiresIn: 3600 }),
+        ]);
+      } catch (_) {}
       return { ...r, thumbnailUrl, resizedUrl };
     })
   );
@@ -169,17 +174,27 @@ app.get("/admin", ensureAdmin, (_req, res) => {
   res.sendFile(path.join(__dirname, "views", "admin.html"));
 });
 
-app.get("/api/admin/uploads", ensureAdmin, async (_req, res) => {
-  const rows = getAllUploadsAdmin.all();
+app.get("/api/admin/uploads", ensureAdmin, async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+  const limit = PAGE_SIZE + 1;
+
+  const rows = getAllUploadsAdminPaginated.all(limit, offset);
+  const hasMore = rows.length > PAGE_SIZE;
+  if (hasMore) rows.pop();
+
   const bucket = process.env.S3_BUCKET_NAME;
   const uploads = await Promise.all(
     rows.map(async (r) => {
       const thumbKey = r.s3_key.replace(/^uploads\//, "thumbnail/");
-      const thumbnailUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 });
+      let thumbnailUrl = null;
+      try {
+        thumbnailUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: thumbKey }), { expiresIn: 3600 });
+      } catch (_) {}
       return { ...r, thumbnailUrl };
     })
   );
-  res.json(uploads);
+  res.json({ uploads, hasMore });
 });
 
 app.post("/api/admin/uploads/:id/delete", ensureAdmin, (req, res) => {
