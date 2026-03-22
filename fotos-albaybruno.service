@@ -1,0 +1,37 @@
+[Unit]
+Description=Fotos Alba & Bruno — wedding photo gallery
+After=network.target
+
+[Service]
+Type=simple
+User=fotos-albaybruno
+WorkingDirectory=/opt/fotos-albaybruno
+
+# Environment — edit these before starting the service
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=BASE_URL=https://your-domain.com
+Environment=GOOGLE_CLIENT_ID=change-me
+Environment=GOOGLE_CLIENT_SECRET=change-me
+Environment=SESSION_SECRET=change-me-to-a-random-string
+Environment=AWS_ACCESS_KEY_ID=change-me
+Environment=AWS_SECRET_ACCESS_KEY=change-me
+Environment=AWS_REGION=eu-west-1
+Environment=S3_BUCKET_NAME=change-me
+
+ExecStart=/usr/bin/node index.js
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fotos-albaybruno
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/fotos-albaybruno
+
+[Install]
+WantedBy=multi-user.target
