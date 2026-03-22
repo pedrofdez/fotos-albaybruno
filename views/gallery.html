@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Galería - Alba &amp; Bruno</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -32,6 +33,17 @@
       margin-left: 1rem;
     }
     nav a:hover { text-decoration: underline; }
+    .btn-subir {
+      padding: 0.45rem 1.1rem;
+      background: #5c4a42;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      text-decoration: none;
+      margin-left: 1rem;
+      transition: background 0.15s;
+    }
+    .btn-subir:hover { background: #3a3330; text-decoration: none; }
 
     /* Filter bar */
     .filter-bar {
@@ -223,8 +235,8 @@
   <div class="container">
     <header>
       <h1>Galería</h1>
-      <nav>
-        <a href="/upload">Subir</a>
+      <nav id="nav">
+        <a href="/upload" class="btn-subir">Subir fotos</a>
         <a href="/logout">Cerrar sesión</a>
       </nav>
     </header>
@@ -265,6 +277,14 @@
     async function init() {
       const me = await fetch('/api/me').then(r => r.json());
       myUserId = me.id;
+
+      if (me.is_admin) {
+        const nav = document.getElementById('nav');
+        const adminLink = document.createElement('a');
+        adminLink.href = '/admin';
+        adminLink.textContent = 'Admin';
+        nav.insertBefore(adminLink, nav.firstChild);
+      }
       uploaders = await fetch('/api/uploaders').then(r => r.json());
 
       if (!currentUserId) {

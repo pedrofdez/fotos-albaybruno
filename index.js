@@ -98,7 +98,7 @@ app.get("/gallery", ensureAuth, (_req, res) => {
 
 // --- API: current user ---
 app.get("/api/me", ensureAuth, (req, res) => {
-  res.json({ id: req.user.id, name: req.user.name, avatar: req.user.avatar });
+  res.json({ id: req.user.id, name: req.user.name, avatar: req.user.avatar, is_admin: !!req.user.is_admin });
 });
 
 // --- API: presign ---
