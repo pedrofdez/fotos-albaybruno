@@ -3,23 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subir Fotos - Alba &amp; Bruno</title>
+  <title>Subir Fotos - Merche y Jos&eacute; Luis</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Georgia', serif;
       min-height: 100dvh;
-      background: #faf8f5;
-      color: #3a3330;
+      background: #fdf4f1;
+      color: #4a3f35;
       padding: 1.5rem;
+      position: relative;
     }
-    .container { max-width: 500px; margin: 0 auto; }
+
+    /* Subtle top-right floral accent */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -60px;
+      right: -60px;
+      width: 220px;
+      height: 220px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 40% 60%, rgba(207,120,120,0.22) 0%, transparent 50%),
+        radial-gradient(circle at 65% 45%, rgba(220,150,140,0.18) 0%, transparent 45%),
+        radial-gradient(circle at 30% 40%, rgba(235,180,170,0.2) 0%, transparent 50%);
+    }
+
+    .container { max-width: 480px; margin: 0 auto; position: relative; z-index: 1; }
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(207,140,130,0.2);
     }
     .user-info {
       display: flex;
@@ -30,53 +51,67 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
+      border: 2px solid rgba(207,140,130,0.3);
     }
     .user-info span { font-size: 0.95rem; }
     nav a {
       font-size: 0.85rem;
-      color: #8a7a70;
+      color: #b5a091;
       text-decoration: none;
       margin-left: 1rem;
     }
-    nav a:hover { text-decoration: underline; }
+    nav a:hover { color: #cf8888; }
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 400;
-      letter-spacing: 0.03em;
-      color: #5c4a42;
-      margin-bottom: 1.5rem;
+      letter-spacing: 0.06em;
+      color: #8b7355;
+      margin-bottom: 1.8rem;
       text-align: center;
     }
     .upload-area {
-      border: 2px dashed #c4b5a8;
-      border-radius: 12px;
-      padding: 2rem;
+      border: 2px dashed #d4a090;
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
       text-align: center;
       cursor: pointer;
-      transition: background 0.2s;
-      margin-bottom: 1rem;
+      transition: background 0.2s, border-color 0.2s;
+      margin-bottom: 1.2rem;
+      background: rgba(255,255,255,0.5);
     }
     .upload-area:hover, .upload-area.dragover {
-      background: #f0ebe4;
+      background: rgba(253,240,236,0.8);
+      border-color: #cf8888;
     }
-    .upload-area p { color: #8a7a70; font-size: 0.95rem; }
-    .upload-area .hint { font-size: 0.8rem; margin-top: 0.4rem; color: #a89a90; }
+    .upload-area .icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      display: block;
+      opacity: 0.5;
+    }
+    .upload-area p { color: #b5a091; font-size: 0.95rem; }
+    .upload-area .hint { font-size: 0.8rem; margin-top: 0.5rem; color: #c8b5a8; }
     #file-input { display: none; }
     .btn {
       display: block;
       width: 100%;
-      padding: 0.8rem;
+      padding: 0.85rem;
       border: none;
-      border-radius: 8px;
-      background: #5c4a42;
+      border-radius: 30px;
+      background: linear-gradient(135deg, #8b7355, #a0845e);
       color: #fff;
       font-family: inherit;
       font-size: 1rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      letter-spacing: 0.03em;
     }
-    .btn:hover { background: #473832; }
-    .btn:disabled { background: #b8aba4; cursor: default; }
+    .btn:hover {
+      background: linear-gradient(135deg, #73603f, #8b7355);
+      box-shadow: 0 4px 12px rgba(139,115,85,0.2);
+      transform: translateY(-1px);
+    }
+    .btn:disabled { background: #c9b99e; box-shadow: none; transform: none; cursor: default; }
     #file-list {
       list-style: none;
       margin: 1rem 0;
@@ -85,8 +120,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid #e8e0d8;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(207,140,130,0.15);
       font-size: 0.85rem;
     }
     .file-name {
@@ -99,7 +134,7 @@
     .progress-bar {
       width: 80px;
       height: 6px;
-      background: #e8e0d8;
+      background: #f0ddd5;
       border-radius: 3px;
       overflow: hidden;
       flex-shrink: 0;
@@ -107,7 +142,7 @@
     .progress-bar .fill {
       height: 100%;
       width: 0%;
-      background: #5c4a42;
+      background: linear-gradient(to right, #cf8888, #8b7355);
       border-radius: 3px;
       transition: width 0.2s;
     }
@@ -116,7 +151,7 @@
       text-align: center;
       margin-top: 1.5rem;
       font-size: 1rem;
-      color: #5c4a42;
+      color: #8b7355;
       display: none;
     }
   </style>
@@ -137,6 +172,7 @@
     <h1>Comparte tus fotos</h1>
 
     <div class="upload-area" id="drop-zone">
+      <span class="icon">&#x1F338;</span>
       <p>Toca para seleccionar fotos o arrástralas aquí</p>
       <p class="hint">Imágenes de hasta 20 MB cada una</p>
     </div>

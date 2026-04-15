@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alba &amp; Bruno</title>
+  <title>Merche y Jos&eacute; Luis</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
   <style>
     *,
@@ -21,58 +21,133 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #faf8f5;
-      color: #3a3330;
+      background: #fdf4f1;
+      color: #4a3f35;
       padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    /* Floral corner decorations */
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      width: 340px;
+      height: 340px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+      filter: blur(1px);
+    }
+
+    body::before {
+      bottom: -80px;
+      left: -80px;
+      background:
+        radial-gradient(circle at 60% 40%, rgba(207,120,120,0.35) 0%, transparent 45%),
+        radial-gradient(circle at 35% 55%, rgba(220,150,140,0.3) 0%, transparent 40%),
+        radial-gradient(circle at 75% 65%, rgba(190,95,100,0.2) 0%, transparent 35%),
+        radial-gradient(circle at 50% 75%, rgba(215,170,155,0.25) 0%, transparent 50%),
+        radial-gradient(circle at 25% 35%, rgba(235,180,170,0.3) 0%, transparent 45%),
+        radial-gradient(circle at 80% 30%, rgba(180,130,110,0.15) 0%, transparent 40%);
+    }
+
+    body::after {
+      top: -80px;
+      right: -80px;
+      background:
+        radial-gradient(circle at 40% 60%, rgba(207,120,120,0.3) 0%, transparent 45%),
+        radial-gradient(circle at 65% 45%, rgba(220,150,140,0.25) 0%, transparent 40%),
+        radial-gradient(circle at 25% 35%, rgba(190,95,100,0.18) 0%, transparent 35%),
+        radial-gradient(circle at 55% 25%, rgba(215,170,155,0.2) 0%, transparent 50%),
+        radial-gradient(circle at 75% 70%, rgba(235,180,170,0.25) 0%, transparent 45%),
+        radial-gradient(circle at 20% 70%, rgba(180,130,110,0.12) 0%, transparent 40%);
     }
 
     .card {
       text-align: center;
-      max-width: 420px;
+      max-width: 440px;
       width: 100%;
+      position: relative;
+      z-index: 1;
+      padding: 3rem 2rem;
+      border: 1px solid rgba(207,140,130,0.25);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(6px);
     }
 
     h1 {
-      font-size: 2.2rem;
       font-weight: 400;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.5rem;
-      color: #5c4a42;
+      letter-spacing: 0.12em;
+      color: #8b7355;
+      line-height: 1.4;
     }
 
-    .divider {
-      width: 60px;
+    h1 .name {
+      display: block;
+      font-size: 2.4rem;
+    }
+
+    h1 .sep {
+      display: block;
+      font-size: 1rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: #c4956e;
+      margin: 0.2rem 0;
+    }
+
+    .ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1.4rem auto;
+    }
+
+    .ornament .line {
+      width: 50px;
       height: 1px;
-      background: #c4b5a8;
-      margin: 1rem auto;
+      background: linear-gradient(to right, transparent, #d4a090, transparent);
+    }
+
+    .ornament .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #cf8888;
+      opacity: 0.5;
     }
 
     p {
       font-size: 1.05rem;
       line-height: 1.6;
-      margin-bottom: 2rem;
-      color: #6b5d55;
+      margin-bottom: 2.2rem;
+      color: #9e8b7a;
+      font-style: italic;
     }
 
     .btn-google {
       display: inline-flex;
       align-items: center;
       gap: 0.6rem;
-      padding: 0.75rem 1.5rem;
-      border: 1px solid #c4b5a8;
-      border-radius: 6px;
+      padding: 0.8rem 1.8rem;
+      border: 1px solid #ddb8a9;
+      border-radius: 30px;
       background: #fff;
-      color: #3a3330;
+      color: #4a3f35;
       font-family: inherit;
       font-size: 1rem;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
     }
 
     .btn-google:hover {
-      background: #f5f0eb;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      background: #fdf0ec;
+      box-shadow: 0 4px 16px rgba(207,120,120,0.12);
+      transform: translateY(-1px);
     }
 
     .btn-google svg {
@@ -84,9 +159,17 @@
 
 <body>
   <div class="card">
-    <h1>Alba &amp; Bruno</h1>
-    <div class="divider"></div>
-    <p>Los mejore, in my humble opinion</p>
+    <h1>
+      <span class="name">Merche</span>
+      <span class="sep">- y -</span>
+      <span class="name">Jos&eacute; Luis</span>
+    </h1>
+    <div class="ornament">
+      <div class="line"></div>
+      <div class="dot"></div>
+      <div class="line"></div>
+    </div>
+    <p>Comparte tus fotos con nosotros</p>
     <a href="/auth/google" class="btn-google">
       <svg viewBox="0 0 24 24">
         <path fill="#4285F4"

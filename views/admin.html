@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Alba &amp; Bruno</title>
+  <title>Admin - Merche y Jos&eacute; Luis</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Georgia', serif;
-      background: #faf8f5;
-      color: #3a3330;
+      background: #fdf4f1;
+      color: #4a3f35;
       padding: 1.5rem;
     }
     .container { max-width: 960px; margin: 0 auto; }
@@ -19,20 +19,22 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(207,140,130,0.2);
     }
     h1 {
       font-size: 1.6rem;
       font-weight: 400;
-      letter-spacing: 0.03em;
-      color: #5c4a42;
+      letter-spacing: 0.06em;
+      color: #8b7355;
     }
     nav a {
       font-size: 0.85rem;
-      color: #8a7a70;
+      color: #b5a091;
       text-decoration: none;
       margin-left: 1rem;
     }
-    nav a:hover { text-decoration: underline; }
+    nav a:hover { color: #cf8888; }
     .tabs {
       display: flex;
       gap: 0.5rem;
@@ -40,18 +42,21 @@
     }
     .tabs button {
       padding: 0.5rem 1.2rem;
-      border: 1px solid #d4ccc4;
-      background: #fff;
-      border-radius: 6px;
+      border: 1px solid #dcc8be;
+      background: rgba(255,255,255,0.7);
+      border-radius: 30px;
       font-family: inherit;
       font-size: 0.9rem;
-      color: #5c4a42;
+      color: #8b7355;
       cursor: pointer;
+      transition: all 0.2s;
     }
+    .tabs button:hover { background: #fdf0ec; border-color: #d4a090; }
     .tabs button.active {
-      background: #5c4a42;
+      background: linear-gradient(135deg, #cf8888, #c47070);
       color: #fff;
-      border-color: #5c4a42;
+      border-color: transparent;
+      box-shadow: 0 2px 8px rgba(207,120,120,0.2);
     }
     .panel { display: none; }
     .panel.active { display: block; }
@@ -63,11 +68,16 @@
       gap: 1rem;
     }
     .card {
-      border-radius: 8px;
+      border-radius: 14px;
       overflow: hidden;
       background: #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
       position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(207,120,120,0.1);
     }
     .card.deleted { opacity: 0.45; }
     .card img {
@@ -79,48 +89,50 @@
     .card .meta {
       padding: 0.5rem 0.6rem;
       font-size: 0.72rem;
-      color: #8a7a70;
+      color: #b5a091;
     }
     .card .actions {
       padding: 0 0.6rem 0.5rem;
     }
     .btn {
-      padding: 0.3rem 0.7rem;
-      border: 1px solid #d4ccc4;
-      background: #fff;
-      border-radius: 4px;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid #dcc8be;
+      background: rgba(255,255,255,0.7);
+      border-radius: 20px;
       font-family: inherit;
       font-size: 0.72rem;
-      color: #5c4a42;
+      color: #8b7355;
       cursor: pointer;
+      transition: all 0.15s;
     }
-    .btn:hover { background: #f0ece8; }
-    .btn-danger { border-color: #c0392b; color: #c0392b; }
-    .btn-danger:hover { background: #fdecea; }
+    .btn:hover { background: #fdf0ec; border-color: #d4a090; }
+    .btn-danger { border-color: #d4787a; color: #c0392b; }
+    .btn-danger:hover { background: #fdecea; border-color: #c0392b; }
     .load-more-wrap {
       text-align: center;
       padding: 1.5rem 0;
     }
     .load-more-btn {
       padding: 0.5rem 1.5rem;
-      border: 1px solid #d4ccc4;
-      background: #fff;
-      border-radius: 20px;
+      border: 1px solid #dcc8be;
+      background: rgba(255,255,255,0.7);
+      border-radius: 30px;
       font-family: inherit;
       font-size: 0.85rem;
-      color: #5c4a42;
+      color: #8b7355;
       cursor: pointer;
+      transition: all 0.2s;
     }
-    .load-more-btn:hover { background: #f0ece8; }
+    .load-more-btn:hover { background: #fdf0ec; border-color: #d4a090; }
 
     /* Users table */
     table {
       width: 100%;
       border-collapse: collapse;
       background: #fff;
-      border-radius: 8px;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     th, td {
       text-align: left;
@@ -128,17 +140,18 @@
       font-size: 0.85rem;
     }
     th {
-      background: #f5f0eb;
-      color: #5c4a42;
+      background: linear-gradient(135deg, #fdf0ec, #f9ebe6);
+      color: #8b7355;
       font-weight: 600;
     }
-    tr:not(:last-child) td { border-bottom: 1px solid #ece6df; }
+    tr:not(:last-child) td { border-bottom: 1px solid rgba(207,140,130,0.15); }
     td img.avatar {
       width: 28px;
       height: 28px;
       border-radius: 50%;
       vertical-align: middle;
       margin-right: 0.4rem;
+      border: 2px solid rgba(207,140,130,0.2);
     }
   </style>
 </head>
@@ -202,7 +215,7 @@
           const panel = document.getElementById('photos');
 
           if (photoPage === 1 && !data.uploads.length) {
-            panel.innerHTML = '<p style="color:#8a7a70">No hay fotos.</p>';
+            panel.innerHTML = '<p style="color:#b5a091;font-style:italic">No hay fotos.</p>';
             photoLoading = false;
             return;
           }
