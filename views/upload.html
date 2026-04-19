@@ -261,14 +261,14 @@
           const res = await fetch('/api/presign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+            body: JSON.stringify({ filename: file.name, contentType: file.type || ({heic:'image/heic',heif:'image/heif',avif:'image/avif'}[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream') }),
           });
           const { uploadUrl } = await res.json();
 
           await new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('PUT', uploadUrl);
-            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.setRequestHeader('Content-Type', file.type || ({heic:'image/heic',heif:'image/heif',avif:'image/avif'}[file.name.split('.').pop().toLowerCase()] || 'application/octet-stream'));
             xhr.upload.onprogress = e => {
               if (e.lengthComputable) fill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
             };

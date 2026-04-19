@@ -32,7 +32,9 @@ export const handler = async (event) => {
     );
 
     const contentType = input.ContentType || "application/octet-stream";
-    if (!contentType.startsWith("image/")) {
+    const ext = key.split(".").pop().toLowerCase();
+    const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif", "tiff"];
+    if (!contentType.startsWith("image/") && !imageExts.includes(ext)) {
       console.log(`Skipping non-image object: ${key} (${contentType})`);
       continue;
     }
