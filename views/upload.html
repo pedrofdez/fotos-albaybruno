@@ -154,6 +154,10 @@
       color: #8b7355;
       display: none;
     }
+    @media (max-width: 400px) {
+      .logout-full { display: none !important; }
+      .logout-short { display: inline !important; }
+    }
   </style>
 </head>
 <body>
@@ -165,7 +169,7 @@
       </div>
       <nav>
         <a href="/gallery">Galería</a>
-        <a href="/logout">Cerrar sesión</a>
+        <a href="/logout"><span class="logout-full">Cerrar sesión</span><span class="logout-short" style="display:none">Salir</span></a>
       </nav>
     </header>
 

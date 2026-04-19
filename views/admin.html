@@ -153,6 +153,10 @@
       margin-right: 0.4rem;
       border: 2px solid rgba(207,140,130,0.2);
     }
+    @media (max-width: 400px) {
+      .logout-full { display: none !important; }
+      .logout-short { display: inline !important; }
+    }
   </style>
 </head>
 <body>
@@ -162,7 +166,7 @@
       <nav>
         <a href="/gallery">Galería</a>
         <a href="/upload">Subir</a>
-        <a href="/logout">Cerrar sesión</a>
+        <a href="/logout"><span class="logout-full">Cerrar sesión</span><span class="logout-short" style="display:none">Salir</span></a>
       </nav>
     </header>
 

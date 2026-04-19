@@ -272,6 +272,10 @@
       border-radius: 12px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.4);
     }
+    @media (max-width: 400px) {
+      .logout-full { display: none !important; }
+      .logout-short { display: inline !important; }
+    }
   </style>
 </head>
 <body>
@@ -280,7 +284,7 @@
       <h1>Galería</h1>
       <nav id="nav">
         <a href="/upload" class="btn-subir">Subir fotos</a>
-        <a href="/logout">Cerrar sesión</a>
+        <a href="/logout"><span class="logout-full">Cerrar sesión</span><span class="logout-short" style="display:none">Salir</span></a>
       </nav>
     </header>
 
